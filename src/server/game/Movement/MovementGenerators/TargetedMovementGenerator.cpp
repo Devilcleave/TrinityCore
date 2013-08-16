@@ -25,6 +25,7 @@
 #include "MoveSplineInit.h"
 #include "MoveSpline.h"
 #include "Player.h"
+#include "Transport.h"
 
 template<class T, typename D>
 void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T* owner, bool updateDestination)
@@ -106,6 +107,26 @@ void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T* owner, bool up
     owner->AddUnitState(UNIT_STATE_CHASE);
 
     Movement::MoveSplineInit init(owner);
+    if (owner->GetCharmerOrOwner() == GetTarget())   // using the same check as in EnterEvadeMode()
+    {
+        if (Transport* ownerTransport = i_target->GetTransport())
+        {
+            if (!owner->GetTransport() && ownerTransport->IsInRange(owner->GetPositionX(), owner->GetPositionY(), owner->GetPositionZ(), 0.0f))
+            {
+                ownerTransport->AddPassenger(owner);
+                init.SetTransportEnter();
+            }
+        }
+        else
+        {
+            if (Transport* petTransport = owner->GetTransport())
+            {
+                petTransport->RemovePassenger(owner);
+                init.SetTransportExit();
+            }
+        }
+    }
+
     init.MovebyPath(i_path->GetPath());
     init.SetWalk(((D*)this)->EnableWalking());
     // Using the same condition for facing target as the one that is used for SetInFront on movement end
